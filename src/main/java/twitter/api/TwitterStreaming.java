@@ -28,6 +28,8 @@ class TwitterStreaming {
     private static String accessToken = null;
     /** accessTokenSecret 初期値. */
     private static String accessTokenSecret = null;
+    /** json形式で保存するか. */
+    private static boolean jsonStoreEnabled;
 
     /**
      * SetUp API Key.
@@ -42,6 +44,7 @@ class TwitterStreaming {
         consumerSecret = prop.getProperty("oauth.consumerSecret");
         accessToken = prop.getProperty("oauth.accessToken");
         accessTokenSecret = prop.getProperty("oauth.accessTokenSecret");
+        jsonStoreEnabled = Boolean.valueOf(prop.getProperty("jsonStoreEnabled"));
     }
 
     /**
@@ -57,13 +60,15 @@ class TwitterStreaming {
             System.out.println("args[0]:twitter4j.properties");
             System.exit(3);
         }
-        new TwitterStreaming(args[0]);
+        String filePath = "src/main/resources/twitter4j.properties";
+        new TwitterStreaming(filePath);
         // SetUp AccessToken
         Configuration conf = new ConfigurationBuilder()
                 .setOAuthConsumerKey(consumerKey)
                 .setOAuthConsumerSecret(consumerSecret)
                 .setOAuthAccessToken(accessToken)
                 .setOAuthAccessTokenSecret(accessTokenSecret)
+                .setJSONStoreEnabled(jsonStoreEnabled)
                 .build();
         // TwitterStreamのインスタンス作成
         TwitterStreamFactory factory = new TwitterStreamFactory(conf);
@@ -74,44 +79,5 @@ class TwitterStreaming {
 
         // 実行
         twitterStream.sample();
-    }
-}
-
-/** Tweetを出力するだけのListener. */
-class Listener extends StatusAdapter {
-    // Tweetを受け取るたびにこのメソッドが呼び出される
-    @Override
-    public void onStatus(Status status) {
-        if (isJapanese(status.getText())) {
-            String text = normalizeText(status.getText());
-            System.out.printf("%d\t%s\t%s\t%s\n",
-                    status.getId(),
-                    status.getUser().getScreenName(),
-                    text,
-                    status.getCreatedAt());
-        }
-    }
-
-    /**
-     * 日本語のみのフィルタリングを行う.
-     * @param text : tweet
-     * @return boolean
-     */
-    public boolean isJapanese(String text) {
-        Matcher m = Pattern.compile("([\\p{InHiragana}\\p{InKatakana}])")
-                .matcher(text);
-        return m.find();
-    }
-
-    /**
-     *  ツイートに改行が含まれていた場合は半角空白文字に置き換える.
-     * @param s : tweet
-     * @return Replace String
-     */
-    private static String normalizeText(String s) {
-          // to space
-          s = s.replaceAll("\r\n", "\n");
-          s = s.replaceAll("\n", " ");
-          return s;
     }
 }
